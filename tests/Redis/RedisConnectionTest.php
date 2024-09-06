@@ -329,6 +329,10 @@ class RedisConnectionTest extends TestCase
                     'count' => 2,
                 ],
             ]));
+            $this->assertEquals(['matt' => 5, 'taylor' => 10], $redis->zrangebyscore('set', 0, 11, [
+                'withscores' => true,
+                'limit' => [1, 2],
+            ]));
 
             $redis->flushall();
         }
@@ -345,6 +349,10 @@ class RedisConnectionTest extends TestCase
                     'offset' => 1,
                     'count' => 2,
                 ],
+            ]));
+            $this->assertEquals(['matt' => 5, 'jeffrey' => 1], $redis->ZREVRANGEBYSCORE('set', 10, 0, [
+                'withscores' => true,
+                'limit' => [1, 2],
             ]));
 
             $redis->flushall();
@@ -685,6 +693,33 @@ class RedisConnectionTest extends TestCase
             $iterator = null;
             [$iterator, $returned] = $redis->sscan('set', $iterator, ['count' => 5]);
             $this->assertCount(2, $returned);
+
+            $redis->flushAll();
+        }
+    }
+
+    public function testItSPopsForKeys()
+    {
+        foreach ($this->connections() as $redis) {
+            $members = ['test:spop:1', 'test:spop:2', 'test:spop:3', 'test:spop:4'];
+
+            foreach ($members as $member) {
+                $redis->sadd('set', $member);
+            }
+
+            $result = $redis->spop('set');
+            $this->assertIsNotArray($result);
+            $this->assertContains($result, $members);
+
+            $result = $redis->spop('set', 1);
+
+            $this->assertIsArray($result);
+            $this->assertCount(1, $result);
+
+            $result = $redis->spop('set', 2);
+
+            $this->assertIsArray($result);
+            $this->assertCount(2, $result);
 
             $redis->flushAll();
         }

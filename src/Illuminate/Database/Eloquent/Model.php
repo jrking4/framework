@@ -146,14 +146,14 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
     /**
      * The name of the "created at" column.
      *
-     * @var string
+     * @var string|null
      */
     const CREATED_AT = 'created_at';
 
     /**
      * The name of the "updated at" column.
      *
-     * @var string
+     * @var string|null
      */
     const UPDATED_AT = 'updated_at';
 
@@ -396,10 +396,12 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
      *
      * @param  string  $key
      * @return string
+     *
+     * @deprecated This method is deprecated and will be removed in a future Laravel version.
      */
     protected function removeTableFromKey($key)
     {
-        return Str::contains($key, '.') ? last(explode('.', $key)) : $key;
+        return $key;
     }
 
     /**
@@ -521,6 +523,22 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
     }
 
     /**
+     * Eager load relationships on the polymorphic relation of a model.
+     *
+     * @param  string  $relation
+     * @param  array  $relations
+     * @return $this
+     */
+    public function loadMorph($relation, $relations)
+    {
+        $className = get_class($this->{$relation});
+
+        $this->{$relation}->load($relations[$className] ?? []);
+
+        return $this;
+    }
+
+    /**
      * Eager load relations on the model if they are not already eager loaded.
      *
      * @param  array|string  $relations
@@ -546,6 +564,22 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
         $relations = is_string($relations) ? func_get_args() : $relations;
 
         $this->newCollection([$this])->loadCount($relations);
+
+        return $this;
+    }
+
+    /**
+     * Eager load relationship counts on the polymorphic relation of a model.
+     *
+     * @param  string  $relation
+     * @param  array  $relations
+     * @return $this
+     */
+    public function loadMorphCount($relation, $relations)
+    {
+        $className = get_class($this->{$relation});
+
+        $this->{$relation}->loadCount($relations[$className] ?? []);
 
         return $this;
     }
@@ -1549,6 +1583,8 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
     {
         $relationship = $this->{Str::plural(Str::camel($childType))}();
 
+        $field = $field ?: $relationship->getRelated()->getRouteKeyName();
+
         if ($relationship instanceof HasManyThrough ||
             $relationship instanceof BelongsToMany) {
             return $relationship->where($relationship->getRelated()->getTable().'.'.$field, $value)->first();
@@ -1691,6 +1727,10 @@ abstract class Model implements Arrayable, ArrayAccess, Jsonable, JsonSerializab
     {
         if (in_array($method, ['increment', 'decrement'])) {
             return $this->$method(...$parameters);
+        }
+
+        if ($resolver = (static::$relationResolvers[get_class($this)][$method] ?? null)) {
+            return $resolver($this);
         }
 
         return $this->forwardCallTo($this->newQuery(), $method, $parameters);

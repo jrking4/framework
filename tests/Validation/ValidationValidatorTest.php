@@ -4,6 +4,7 @@ namespace Illuminate\Tests\Validation;
 
 use DateTime;
 use DateTimeImmutable;
+use Egulias\EmailValidator\Validation\NoRFCWarningsValidation;
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\Guard;
@@ -35,6 +36,32 @@ class ValidationValidatorTest extends TestCase
     {
         Carbon::setTestNow();
         m::close();
+    }
+
+    public function testNestedErrorMessagesAreRetrievedFromLocalArray()
+    {
+        $trans = $this->getIlluminateArrayTranslator();
+        $v = new Validator($trans, [
+            'users' => [
+                [
+                    'name' => 'Taylor Otwell',
+                    'posts' => [
+                        [
+                            'name' => '',
+                        ],
+                    ],
+                ],
+            ],
+        ], [
+            'users.*.name' => ['required'],
+            'users.*.posts.*.name' => ['required'],
+        ], [
+            'users.*.name.required' => 'user name is required',
+            'users.*.posts.*.name.required' => 'post name is required',
+        ]);
+
+        $this->assertFalse($v->passes());
+        $this->assertEquals('post name is required', $v->errors()->all()[0]);
     }
 
     public function testSometimesWorksOnNestedArrays()
@@ -1103,6 +1130,14 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator($trans, ['first' => 'sven'], ['last' => 'required_unless:first,taylor,sven']);
         $this->assertTrue($v->passes());
 
+        $trans = $this->getIlluminateArrayTranslator();
+        $v = new Validator($trans, ['foo' => false], ['bar' => 'required_unless:foo,false']);
+        $this->assertTrue($v->passes());
+
+        $trans = $this->getIlluminateArrayTranslator();
+        $v = new Validator($trans, ['foo' => false], ['bar' => 'required_unless:foo,true']);
+        $this->assertTrue($v->fails());
+
         // error message when passed multiple values (required_unless:foo,bar,baz)
         $trans = $this->getIlluminateArrayTranslator();
         $trans->addLines(['validation.required_unless' => 'The :attribute field is required unless :other is in :values.'], 'en');
@@ -1253,6 +1288,9 @@ class ValidationValidatorTest extends TestCase
 
         $v = new Validator($trans, ['lhs' => 15.0], ['lhs' => 'numeric|gt:10']);
         $this->assertTrue($v->passes());
+
+        $v = new Validator($trans, ['lhs' => 5, 10 => 1], ['lhs' => 'numeric|gt:10']);
+        $this->assertTrue($v->fails());
 
         $v = new Validator($trans, ['lhs' => '15'], ['lhs' => 'numeric|gt:10']);
         $this->assertTrue($v->passes());
@@ -1515,6 +1553,10 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
         $v = new Validator($trans, ['foo' => '{"name":"John","age":"34"}'], ['foo' => 'json']);
         $this->assertTrue($v->passes());
+
+        $trans = $this->getIlluminateArrayTranslator();
+        $v = new Validator($trans, ['foo' => ['array']], ['foo' => 'json']);
+        $this->assertFalse($v->passes());
     }
 
     public function testValidateBoolean()
@@ -1792,14 +1834,14 @@ class ValidationValidatorTest extends TestCase
         $this->assertFalse($v->passes());
 
         $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['isValid', 'getSize'])->setConstructorArgs([__FILE__, basename(__FILE__)])->getMock();
-        $file->expects($this->any())->method('isValid')->willReturn(true);
-        $file->expects($this->at(1))->method('getSize')->willReturn(3072);
+        $file->method('isValid')->willReturn(true);
+        $file->method('getSize')->willReturn(3072);
         $v = new Validator($trans, ['photo' => $file], ['photo' => 'Max:10']);
         $this->assertTrue($v->passes());
 
         $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['isValid', 'getSize'])->setConstructorArgs([__FILE__, basename(__FILE__)])->getMock();
-        $file->expects($this->at(0))->method('isValid')->willReturn(true);
-        $file->expects($this->at(1))->method('getSize')->willReturn(4072);
+        $file->method('isValid')->willReturn(true);
+        $file->method('getSize')->willReturn(4072);
         $v = new Validator($trans, ['photo' => $file], ['photo' => 'Max:2']);
         $this->assertFalse($v->passes());
 
@@ -2317,20 +2359,26 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator($trans, ['x' => ['not a string']], ['x' => 'Email']);
         $this->assertFalse($v->passes());
 
-        $v = new Validator($trans, ['x' => new class {
-            public function __toString()
+        $v = new Validator($trans, [
+            'x' => new class
             {
-                return 'aslsdlks';
-            }
-        }], ['x' => 'Email']);
+                public function __toString()
+                {
+                    return 'aslsdlks';
+                }
+            },
+        ], ['x' => 'Email']);
         $this->assertFalse($v->passes());
 
-        $v = new Validator($trans, ['x' => new class {
-            public function __toString()
+        $v = new Validator($trans, [
+            'x' => new class
             {
-                return 'foo@gmail.com';
-            }
-        }], ['x' => 'Email']);
+                public function __toString()
+                {
+                    return 'foo@gmail.com';
+                }
+            },
+        ], ['x' => 'Email']);
         $this->assertTrue($v->passes());
 
         $v = new Validator($trans, ['x' => 'foo@gmail.com'], ['x' => 'Email']);
@@ -2352,6 +2400,43 @@ class ValidationValidatorTest extends TestCase
     public function testValidateEmailWithFilterCheck()
     {
         $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'foo@bar'], ['x' => 'email:filter']);
+        $this->assertFalse($v->passes());
+
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'example@example.com'], ['x' => 'email:filter']);
+        $this->assertTrue($v->passes());
+
+        // Unicode characters are not allowed
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'exämple@example.com'], ['x' => 'email:filter']);
+        $this->assertFalse($v->passes());
+
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'exämple@exämple.com'], ['x' => 'email:filter']);
+        $this->assertFalse($v->passes());
+    }
+
+    public function testValidateEmailWithFilterUnicodeCheck()
+    {
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'foo@bar'], ['x' => 'email:filter_unicode']);
+        $this->assertFalse($v->passes());
+
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'example@example.com'], ['x' => 'email:filter_unicode']);
+        $this->assertTrue($v->passes());
+
+        // Any unicode characters are allowed only in local-part
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'exämple@example.com'], ['x' => 'email:filter_unicode']);
+        $this->assertTrue($v->passes());
+
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'exämple@exämple.com'], ['x' => 'email:filter_unicode']);
+        $this->assertFalse($v->passes());
+    }
+
+    public function testValidateEmailWithCustomClassCheck()
+    {
+        $container = m::mock(Container::class);
+        $container->shouldReceive('make')->with(NoRFCWarningsValidation::class)->andReturn(new NoRFCWarningsValidation());
+
+        $v = new Validator($this->getIlluminateArrayTranslator(), ['x' => 'foo@bar '], ['x' => 'email:'.NoRFCWarningsValidation::class]);
+        $v->setContainer($container);
+
         $this->assertFalse($v->passes());
     }
 
@@ -2666,43 +2751,49 @@ class ValidationValidatorTest extends TestCase
         $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file->expects($this->any())->method('guessExtension')->willReturn('php');
         $file->expects($this->any())->method('getClientOriginalExtension')->willReturn('php');
-        $v = new Validator($trans, ['x' => $file], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file], ['x' => 'image']);
         $this->assertFalse($v->passes());
 
         $file2 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
-        $file2->expects($this->any())->method('guessExtension')->willReturn('jpeg');
+        $file2->expects($this->any())->method('guessExtension')->willReturn('jpg');
         $file2->expects($this->any())->method('getClientOriginalExtension')->willReturn('jpeg');
-        $v = new Validator($trans, ['x' => $file2], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file2], ['x' => 'image']);
+        $this->assertTrue($v->passes());
+
+        $file2 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
+        $file2->expects($this->any())->method('guessExtension')->willReturn('jpg');
+        $file2->expects($this->any())->method('getClientOriginalExtension')->willReturn('jpg');
+        $v = new Validator($trans, ['x' => $file2], ['x' => 'image']);
         $this->assertTrue($v->passes());
 
         $file3 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file3->expects($this->any())->method('guessExtension')->willReturn('gif');
         $file3->expects($this->any())->method('getClientOriginalExtension')->willReturn('gif');
-        $v = new Validator($trans, ['x' => $file3], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file3], ['x' => 'image']);
         $this->assertTrue($v->passes());
 
         $file4 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file4->expects($this->any())->method('guessExtension')->willReturn('bmp');
         $file4->expects($this->any())->method('getClientOriginalExtension')->willReturn('bmp');
-        $v = new Validator($trans, ['x' => $file4], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file4], ['x' => 'image']);
         $this->assertTrue($v->passes());
 
         $file5 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file5->expects($this->any())->method('guessExtension')->willReturn('png');
         $file5->expects($this->any())->method('getClientOriginalExtension')->willReturn('png');
-        $v = new Validator($trans, ['x' => $file5], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file5], ['x' => 'image']);
         $this->assertTrue($v->passes());
 
         $file6 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file6->expects($this->any())->method('guessExtension')->willReturn('svg');
         $file6->expects($this->any())->method('getClientOriginalExtension')->willReturn('svg');
-        $v = new Validator($trans, ['x' => $file6], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file6], ['x' => 'image']);
         $this->assertTrue($v->passes());
 
         $file7 = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file7->expects($this->any())->method('guessExtension')->willReturn('webp');
         $file7->expects($this->any())->method('getClientOriginalExtension')->willReturn('webp');
-        $v = new Validator($trans, ['x' => $file7], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file7], ['x' => 'image']);
         $this->assertTrue($v->passes());
     }
 
@@ -2714,7 +2805,7 @@ class ValidationValidatorTest extends TestCase
         $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
         $file->expects($this->any())->method('guessExtension')->willReturn('jpeg');
         $file->expects($this->any())->method('getClientOriginalExtension')->willReturn('php');
-        $v = new Validator($trans, ['x' => $file], ['x' => 'Image']);
+        $v = new Validator($trans, ['x' => $file], ['x' => 'image']);
         $this->assertFalse($v->passes());
     }
 
@@ -2817,21 +2908,35 @@ class ValidationValidatorTest extends TestCase
 
         $v = new Validator($trans, ['x' => $svgFile], ['x' => 'dimensions:max_width=1,max_height=1']);
         $this->assertTrue($v->passes());
+
+        // Knowing that demo image4.png has width = 64 and height = 65
+        $uploadedFile = new UploadedFile(__DIR__.'/fixtures/image4.png', '', null, null, true);
+        $trans = $this->getIlluminateArrayTranslator();
+
+        // Ensure validation doesn't erroneously fail when ratio doesn't matches
+        $v = new Validator($trans, ['x' => $uploadedFile], ['x' => 'dimensions:ratio=1']);
+        $this->assertFalse($v->passes());
     }
 
-    /**
-     * @requires extension fileinfo
-     */
-    public function testValidatePhpMimetypes()
+    public function testValidateMimetypes()
     {
         $trans = $this->getIlluminateArrayTranslator();
-        $uploadedFile = [__DIR__.'/ValidationRuleTest.php', '', null, null, true];
 
-        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
-        $file->expects($this->any())->method('guessExtension')->willReturn('rtf');
-        $file->expects($this->any())->method('getClientOriginalExtension')->willReturn('rtf');
+        $uploadedFile = [__FILE__, '', null, null, true];
 
+        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['getMimeType'])->setConstructorArgs($uploadedFile)->getMock();
+        $file->expects($this->any())->method('getMimeType')->willReturn('text/rtf');
         $v = new Validator($trans, ['x' => $file], ['x' => 'mimetypes:text/*']);
+        $this->assertTrue($v->passes());
+
+        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['getMimeType'])->setConstructorArgs($uploadedFile)->getMock();
+        $file->expects($this->any())->method('getMimeType')->willReturn('application/pdf');
+        $v = new Validator($trans, ['x' => $file], ['x' => 'mimetypes:text/rtf']);
+        $this->assertFalse($v->passes());
+
+        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['getMimeType'])->setConstructorArgs($uploadedFile)->getMock();
+        $file->expects($this->any())->method('getMimeType')->willReturn('image/jpeg');
+        $v = new Validator($trans, ['x' => $file], ['x' => 'mimetypes:image/jpeg']);
         $this->assertTrue($v->passes());
     }
 
@@ -2851,6 +2956,18 @@ class ValidationValidatorTest extends TestCase
         $file2->expects($this->any())->method('isValid')->willReturn(false);
         $v = new Validator($trans, ['x' => $file2], ['x' => 'mimes:pdf']);
         $this->assertFalse($v->passes());
+
+        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
+        $file->expects($this->any())->method('guessExtension')->willReturn('jpg');
+        $file->expects($this->any())->method('getClientOriginalExtension')->willReturn('jpg');
+        $v = new Validator($trans, ['x' => $file], ['x' => 'mimes:jpeg']);
+        $this->assertTrue($v->passes());
+
+        $file = $this->getMockBuilder(UploadedFile::class)->setMethods(['guessExtension', 'getClientOriginalExtension'])->setConstructorArgs($uploadedFile)->getMock();
+        $file->expects($this->any())->method('guessExtension')->willReturn('jpg');
+        $file->expects($this->any())->method('getClientOriginalExtension')->willReturn('jpeg');
+        $v = new Validator($trans, ['x' => $file], ['x' => 'mimes:jpg']);
+        $this->assertTrue($v->passes());
     }
 
     public function testValidateMimeEnforcesPhpCheck()
@@ -2910,9 +3027,11 @@ class ValidationValidatorTest extends TestCase
         $this->assertTrue($v->passes());
 
         $trans = $this->getIlluminateArrayTranslator();
-        $v = new Validator($trans, ['x' => 'aslsdlks
+        $v = new Validator($trans, [
+            'x' => 'aslsdlks
 1
-1'], ['x' => 'Alpha']);
+1',
+        ], ['x' => 'Alpha']);
         $this->assertFalse($v->passes());
 
         $v = new Validator($trans, ['x' => 'http://google.com'], ['x' => 'Alpha']);
@@ -3566,9 +3685,11 @@ class ValidationValidatorTest extends TestCase
 
         $trans = $this->getIlluminateArrayTranslator();
         $v = new Validator($trans, ['name' => 'taylor'], ['name' => 'foo_bar']);
-        $v->addExtensions(['FooBar' => function () {
-            return false;
-        }]);
+        $v->addExtensions([
+            'FooBar' => function () {
+                return false;
+            },
+        ]);
         $v->setFallbackMessages(['foo_bar' => 'foo!']);
         $this->assertFalse($v->passes());
         $v->messages()->setFormat(':message');
@@ -3743,21 +3864,27 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator($trans, $data, ['names.*.first' => 'required']);
         $this->assertFalse($v->passes());
 
-        $data = ['people' => [
-            ['cars' => [['model' => 2005], []]],
-        ]];
+        $data = [
+            'people' => [
+                ['cars' => [['model' => 2005], []]],
+            ],
+        ];
         $v = new Validator($trans, $data, ['people.*.cars.*.model' => 'required']);
         $this->assertFalse($v->passes());
 
-        $data = ['people' => [
-            ['name' => 'test', 'cars' => [['model' => 2005], ['name' => 'test2']]],
-        ]];
+        $data = [
+            'people' => [
+                ['name' => 'test', 'cars' => [['model' => 2005], ['name' => 'test2']]],
+            ],
+        ];
         $v = new Validator($trans, $data, ['people.*.cars.*.model' => 'required']);
         $this->assertFalse($v->passes());
 
-        $data = ['people' => [
-            ['phones' => ['iphone', 'android'], 'cars' => [['model' => 2005], ['name' => 'test2']]],
-        ]];
+        $data = [
+            'people' => [
+                ['phones' => ['iphone', 'android'], 'cars' => [['model' => 2005], ['name' => 'test2']]],
+            ],
+        ];
         $v = new Validator($trans, $data, ['people.*.cars.*.model' => 'required']);
         $this->assertFalse($v->passes());
 
@@ -3804,11 +3931,75 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator($trans, ['foo' => ['bar' => 'valid'], 'foo.bar' => ''], ['foo\.bar' => 'required']);
         $this->assertTrue($v->fails());
 
+        $v = new Validator($trans, ['foo' => ['bar' => 'valid'], 'foo.bar' => 'zxc'], ['foo\.bar' => 'required']);
+        $this->assertFalse($v->fails());
+
         $v = new Validator($trans, ['foo' => ['bar.baz' => '']], ['foo.bar\.baz' => 'required']);
         $this->assertTrue($v->fails());
 
         $v = new Validator($trans, ['foo' => [['bar.baz' => ''], ['bar.baz' => '']]], ['foo.*.bar\.baz' => 'required']);
         $this->assertTrue($v->fails());
+    }
+
+    public function testPassingSlashVulnerability()
+    {
+        $trans = $this->getIlluminateArrayTranslator();
+
+        $v = new Validator($trans, [
+            'matrix' => ['\\' => ['invalid'], '1\\' => ['invalid']],
+        ], [
+            'matrix.*.*' => 'integer',
+        ]);
+        $this->assertTrue($v->fails());
+
+        $v = new Validator($trans, [
+            'matrix' => ['\\' => [1], '1\\' => [1]],
+        ], [
+            'matrix.*.*' => 'integer',
+        ]);
+        $this->assertTrue($v->passes());
+
+        $v = new Validator($trans, [
+            'foo' => ['bar' => 'valid'], 'foo.bar' => 'invalid', 'foo->bar' => 'valid',
+        ], [
+            'foo\.bar' => 'required|in:valid',
+        ]);
+        $this->assertTrue($v->fails());
+    }
+
+    public function testPlaceholdersAreReplaced()
+    {
+        $trans = $this->getIlluminateArrayTranslator();
+
+        $v = new Validator($trans, [
+            'matrix' => ['\\' => ['invalid'], '1\\' => ['invalid']],
+        ], [
+            'matrix.*.*' => 'integer',
+        ]);
+        $this->assertTrue($v->fails());
+
+        $v = new Validator($trans, [
+            'matrix' => ['\\' => [1], '1\\' => [1]],
+        ], [
+            'matrix.*.*' => 'integer',
+        ]);
+        $this->assertTrue($v->passes());
+
+        $v = new Validator($trans, [
+            'foo' => ['bar' => 'valid'], 'foo.bar' => 'invalid', 'foo->bar' => 'valid',
+        ], [
+            'foo\.bar' => 'required|in:valid',
+        ]);
+        $this->assertTrue($v->fails());
+        $this->assertArrayHasKey('foo.bar', $v->errors()->getMessages());
+
+        $v = new Validator($trans, [
+            'foo.bar' => 'valid',
+        ], [
+            'foo\.bar' => 'required|in:valid',
+        ]);
+        $this->assertTrue($v->passes());
+        $this->assertArrayHasKey('foo.bar', $v->validated());
     }
 
     public function testCoveringEmptyKeys()
@@ -3822,35 +4013,8 @@ class ValidationValidatorTest extends TestCase
     {
         $trans = $this->getIlluminateArrayTranslator();
 
-        $v = new Validator($trans, ['foo' => [1, 2, 3]], ['foo' => 'size:4']);
-        $this->assertFalse($v->passes());
-
-        $v = new Validator($trans, ['foo' => [1, 2, 3, 4]], ['foo' => 'size:4']);
-        $this->assertTrue($v->passes());
-
-        $v = new Validator($trans, ['foo' => [1, 2, 3, 4]], ['foo.*' => 'integer', 'foo.0' => 'required']);
-        $this->assertTrue($v->passes());
-
-        $v = new Validator($trans, ['foo' => [['bar' => [1, 2, 3]], ['bar' => [1, 2, 3]]]], ['foo.*.bar' => 'size:4']);
-        $this->assertFalse($v->passes());
-
-        $v = new Validator($trans,
-            ['foo' => [['bar' => [1, 2, 3]], ['bar' => [1, 2, 3]]]], ['foo.*.bar' => 'min:3']);
-        $this->assertTrue($v->passes());
-
-        $v = new Validator($trans,
-            ['foo' => [['bar' => [1, 2, 3]], ['bar' => [1, 2, 3]]]], ['foo.*.bar' => 'between:3,6']);
-        $this->assertTrue($v->passes());
-
-        $v = new Validator($trans,
-            ['foo' => [['name' => 'first', 'votes' => [1, 2]], ['name' => 'second', 'votes' => ['something', 2]]]],
-            ['foo.*.votes' => ['Required', 'Size:2']]);
-        $this->assertTrue($v->passes());
-
-        $v = new Validator($trans,
-            ['foo' => [['name' => 'first', 'votes' => [1, 2, 3]], ['name' => 'second', 'votes' => ['something', 2]]]],
-            ['foo.*.votes' => ['Required', 'Size:2']]);
-        $this->assertFalse($v->passes());
+        $v = new Validator($trans, ['foo' => ['bar.baz' => '']], ['foo' => 'required']);
+        $this->assertEquals(['foo' => ['bar.baz' => '']], $v->validated());
     }
 
     public function testValidateNestedArrayWithCommonParentChildKey()
@@ -3896,41 +4060,55 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // confirmed passes
-        $v = new Validator($trans, ['foo' => [
-            ['password' => 'foo0', 'password_confirmation' => 'foo0'],
-            ['password' => 'foo1', 'password_confirmation' => 'foo1'],
-        ]], ['foo.*.password' => 'confirmed']);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['password' => 'foo0', 'password_confirmation' => 'foo0'],
+                ['password' => 'foo1', 'password_confirmation' => 'foo1'],
+            ],
+        ], ['foo.*.password' => 'confirmed']);
         $this->assertTrue($v->passes());
 
         // nested confirmed passes
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['password' => 'bar0', 'password_confirmation' => 'bar0'],
-                ['password' => 'bar1', 'password_confirmation' => 'bar1'],
-            ]],
-            ['bar' => [
-                ['password' => 'bar2', 'password_confirmation' => 'bar2'],
-                ['password' => 'bar3', 'password_confirmation' => 'bar3'],
-            ]],
-        ]], ['foo.*.bar.*.password' => 'confirmed']);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['password' => 'bar0', 'password_confirmation' => 'bar0'],
+                        ['password' => 'bar1', 'password_confirmation' => 'bar1'],
+                    ],
+                ],
+                [
+                    'bar' => [
+                        ['password' => 'bar2', 'password_confirmation' => 'bar2'],
+                        ['password' => 'bar3', 'password_confirmation' => 'bar3'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.password' => 'confirmed']);
         $this->assertTrue($v->passes());
 
         // confirmed fails
-        $v = new Validator($trans, ['foo' => [
-            ['password' => 'foo0', 'password_confirmation' => 'bar0'],
-            ['password' => 'foo1'],
-        ]], ['foo.*.password' => 'confirmed']);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['password' => 'foo0', 'password_confirmation' => 'bar0'],
+                ['password' => 'foo1'],
+            ],
+        ], ['foo.*.password' => 'confirmed']);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.password'));
         $this->assertTrue($v->messages()->has('foo.1.password'));
 
         // nested confirmed fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['password' => 'bar0'],
-                ['password' => 'bar1', 'password_confirmation' => 'bar2'],
-            ]],
-        ]], ['foo.*.bar.*.password' => 'confirmed']);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['password' => 'bar0'],
+                        ['password' => 'bar1', 'password_confirmation' => 'bar2'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.password' => 'confirmed']);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.password'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.password'));
@@ -3941,37 +4119,49 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // different passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'foo', 'last' => 'bar'],
-            ['name' => 'bar', 'last' => 'foo'],
-        ]], ['foo.*.name' => ['different:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'foo', 'last' => 'bar'],
+                ['name' => 'bar', 'last' => 'foo'],
+            ],
+        ], ['foo.*.name' => ['different:foo.*.last']]);
         $this->assertTrue($v->passes());
 
         // nested different passes
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => 'foo', 'last' => 'bar'],
-                ['name' => 'bar', 'last' => 'foo'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['different:foo.*.bar.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => 'foo', 'last' => 'bar'],
+                        ['name' => 'bar', 'last' => 'foo'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['different:foo.*.bar.*.last']]);
         $this->assertTrue($v->passes());
 
         // different fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'foo', 'last' => 'foo'],
-            ['name' => 'bar', 'last' => 'bar'],
-        ]], ['foo.*.name' => ['different:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'foo', 'last' => 'foo'],
+                ['name' => 'bar', 'last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['different:foo.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested different fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => 'foo', 'last' => 'foo'],
-                ['name' => 'bar', 'last' => 'bar'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['different:foo.*.bar.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => 'foo', 'last' => 'foo'],
+                        ['name' => 'bar', 'last' => 'bar'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['different:foo.*.bar.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -3982,37 +4172,49 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // same passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'foo', 'last' => 'foo'],
-            ['name' => 'bar', 'last' => 'bar'],
-        ]], ['foo.*.name' => ['same:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'foo', 'last' => 'foo'],
+                ['name' => 'bar', 'last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['same:foo.*.last']]);
         $this->assertTrue($v->passes());
 
         // nested same passes
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => 'foo', 'last' => 'foo'],
-                ['name' => 'bar', 'last' => 'bar'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['same:foo.*.bar.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => 'foo', 'last' => 'foo'],
+                        ['name' => 'bar', 'last' => 'bar'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['same:foo.*.bar.*.last']]);
         $this->assertTrue($v->passes());
 
         // same fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'foo', 'last' => 'bar'],
-            ['name' => 'bar', 'last' => 'foo'],
-        ]], ['foo.*.name' => ['same:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'foo', 'last' => 'bar'],
+                ['name' => 'bar', 'last' => 'foo'],
+            ],
+        ], ['foo.*.name' => ['same:foo.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested same fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => 'foo', 'last' => 'bar'],
-                ['name' => 'bar', 'last' => 'foo'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['same:foo.*.bar.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => 'foo', 'last' => 'bar'],
+                        ['name' => 'bar', 'last' => 'foo'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['same:foo.*.bar.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4023,35 +4225,45 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first'],
-            ['name' => 'second'],
-        ]], ['foo.*.name' => ['Required']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first'],
+                ['name' => 'second'],
+            ],
+        ], ['foo.*.name' => ['Required']]);
         $this->assertTrue($v->passes());
 
         // nested required passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first'],
-            ['name' => 'second'],
-        ]], ['foo.*.name' => ['Required']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first'],
+                ['name' => 'second'],
+            ],
+        ], ['foo.*.name' => ['Required']]);
         $this->assertTrue($v->passes());
 
         // required fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null],
-            ['name' => null, 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null],
+                ['name' => null, 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null],
-                ['name' => null],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null],
+                        ['name' => null],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4062,35 +4274,45 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_if passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'foo'],
-            ['last' => 'bar'],
-        ]], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'foo'],
+                ['last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
         $this->assertTrue($v->passes());
 
         // nested required_if passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'foo'],
-            ['last' => 'bar'],
-        ]], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'foo'],
+                ['last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
         $this->assertTrue($v->passes());
 
         // required_if fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'foo'],
-            ['name' => null, 'last' => 'foo'],
-        ]], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'foo'],
+                ['name' => null, 'last' => 'foo'],
+            ],
+        ], ['foo.*.name' => ['Required_if:foo.*.last,foo']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required_if fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'last' => 'foo'],
-                ['name' => null, 'last' => 'foo'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_if:foo.*.bar.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'last' => 'foo'],
+                        ['name' => null, 'last' => 'foo'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_if:foo.*.bar.*.last,foo']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4101,35 +4323,45 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_unless passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'foo'],
-            ['name' => 'second', 'last' => 'bar'],
-        ]], ['foo.*.name' => ['Required_unless:foo.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'foo'],
+                ['name' => 'second', 'last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['Required_unless:foo.*.last,foo']]);
         $this->assertTrue($v->passes());
 
         // nested required_unless passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'foo'],
-            ['name' => 'second', 'last' => 'foo'],
-        ]], ['foo.*.bar.*.name' => ['Required_unless:foo.*.bar.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'foo'],
+                ['name' => 'second', 'last' => 'foo'],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_unless:foo.*.bar.*.last,foo']]);
         $this->assertTrue($v->passes());
 
         // required_unless fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'baz'],
-            ['name' => null, 'last' => 'bar'],
-        ]], ['foo.*.name' => ['Required_unless:foo.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'baz'],
+                ['name' => null, 'last' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['Required_unless:foo.*.last,foo']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required_unless fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'last' => 'bar'],
-                ['name' => null, 'last' => 'bar'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_unless:foo.*.bar.*.last,foo']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'last' => 'bar'],
+                        ['name' => null, 'last' => 'bar'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_unless:foo.*.bar.*.last,foo']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4140,41 +4372,53 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_with passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'last'],
-            ['name' => 'second', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_with:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'last'],
+                ['name' => 'second', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_with:foo.*.last']]);
         $this->assertTrue($v->passes());
 
         // nested required_with passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'last'],
-            ['name' => 'second', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_with:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'last'],
+                ['name' => 'second', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_with:foo.*.last']]);
         $this->assertTrue($v->passes());
 
         // required_with fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'last'],
-            ['name' => null, 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_with:foo.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'last'],
+                ['name' => null, 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_with:foo.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
-        $v = new Validator($trans, ['fields' => [
-            'fr' => ['name' => '', 'content' => 'ragnar'],
-            'es' => ['name' => '', 'content' => 'lagertha'],
-        ]], ['fields.*.name' => 'required_with:fields.*.content']);
+        $v = new Validator($trans, [
+            'fields' => [
+                'fr' => ['name' => '', 'content' => 'ragnar'],
+                'es' => ['name' => '', 'content' => 'lagertha'],
+            ],
+        ], ['fields.*.name' => 'required_with:fields.*.content']);
         $this->assertFalse($v->passes());
 
         // nested required_with fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'last' => 'last'],
-                ['name' => null, 'last' => 'last'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_with:foo.*.bar.*.last']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'last' => 'last'],
+                        ['name' => null, 'last' => 'last'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_with:foo.*.bar.*.last']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4185,35 +4429,45 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_with_all passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'last', 'middle' => 'middle'],
-            ['name' => 'second', 'last' => 'last', 'middle' => 'middle'],
-        ]], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'last', 'middle' => 'middle'],
+                ['name' => 'second', 'last' => 'last', 'middle' => 'middle'],
+            ],
+        ], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
         // nested required_with_all passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'last' => 'last', 'middle' => 'middle'],
-            ['name' => 'second', 'last' => 'last', 'middle' => 'middle'],
-        ]], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'last' => 'last', 'middle' => 'middle'],
+                ['name' => 'second', 'last' => 'last', 'middle' => 'middle'],
+            ],
+        ], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
         // required_with_all fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'last', 'middle' => 'middle'],
-            ['name' => null, 'last' => 'last', 'middle' => 'middle'],
-        ]], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'last', 'middle' => 'middle'],
+                ['name' => null, 'last' => 'last', 'middle' => 'middle'],
+            ],
+        ], ['foo.*.name' => ['Required_with_all:foo.*.last,foo.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required_with_all fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'last' => 'last', 'middle' => 'middle'],
-                ['name' => null, 'last' => 'last', 'middle' => 'middle'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_with_all:foo.*.bar.*.last,foo.*.bar.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'last' => 'last', 'middle' => 'middle'],
+                        ['name' => null, 'last' => 'last', 'middle' => 'middle'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_with_all:foo.*.bar.*.last,foo.*.bar.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4224,35 +4478,45 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_without passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'middle' => 'middle'],
-            ['name' => 'second', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'middle' => 'middle'],
+                ['name' => 'second', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
         // nested required_without passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first', 'middle' => 'middle'],
-            ['name' => 'second', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first', 'middle' => 'middle'],
+                ['name' => 'second', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
         // required_without fails
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'last' => 'last'],
-            ['name' => null, 'middle' => 'middle'],
-        ]], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'last' => 'last'],
+                ['name' => null, 'middle' => 'middle'],
+            ],
+        ], ['foo.*.name' => ['Required_without:foo.*.last,foo.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required_without fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'last' => 'last'],
-                ['name' => null, 'middle' => 'middle'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_without:foo.*.bar.*.last,foo.*.bar.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'last' => 'last'],
+                        ['name' => null, 'middle' => 'middle'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_without:foo.*.bar.*.last,foo.*.bar.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4263,37 +4527,47 @@ class ValidationValidatorTest extends TestCase
         $trans = $this->getIlluminateArrayTranslator();
 
         // required_without_all passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first'],
-            ['name' => null, 'middle' => 'middle'],
-            ['name' => null, 'middle' => 'middle', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first'],
+                ['name' => null, 'middle' => 'middle'],
+                ['name' => null, 'middle' => 'middle', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
         // required_without_all fails
         // nested required_without_all passes
-        $v = new Validator($trans, ['foo' => [
-            ['name' => 'first'],
-            ['name' => null, 'middle' => 'middle'],
-            ['name' => null, 'middle' => 'middle', 'last' => 'last'],
-        ]], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => 'first'],
+                ['name' => null, 'middle' => 'middle'],
+                ['name' => null, 'middle' => 'middle', 'last' => 'last'],
+            ],
+        ], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
         $this->assertTrue($v->passes());
 
-        $v = new Validator($trans, ['foo' => [
-            ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
-            ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
-        ]], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
+                ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
+            ],
+        ], ['foo.*.name' => ['Required_without_all:foo.*.last,foo.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.name'));
         $this->assertTrue($v->messages()->has('foo.1.name'));
 
         // nested required_without_all fails
-        $v = new Validator($trans, ['foo' => [
-            ['bar' => [
-                ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
-                ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
-            ]],
-        ]], ['foo.*.bar.*.name' => ['Required_without_all:foo.*.bar.*.last,foo.*.bar.*.middle']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                [
+                    'bar' => [
+                        ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
+                        ['name' => null, 'foo' => 'foo', 'bar' => 'bar'],
+                    ],
+                ],
+            ],
+        ], ['foo.*.bar.*.name' => ['Required_without_all:foo.*.bar.*.last,foo.*.bar.*.middle']]);
         $this->assertFalse($v->passes());
         $this->assertTrue($v->messages()->has('foo.0.bar.0.name'));
         $this->assertTrue($v->messages()->has('foo.0.bar.1.name'));
@@ -4303,24 +4577,32 @@ class ValidationValidatorTest extends TestCase
     {
         $trans = $this->getIlluminateArrayTranslator();
 
-        $v = new Validator($trans, ['foo' => [
-            ['start' => '2016-04-19', 'end' => '2017-04-19'],
-        ]], ['foo.*.start' => ['before:foo.*.end']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['start' => '2016-04-19', 'end' => '2017-04-19'],
+            ],
+        ], ['foo.*.start' => ['before:foo.*.end']]);
         $this->assertTrue($v->passes());
 
-        $v = new Validator($trans, ['foo' => [
-            ['start' => '2016-04-19', 'end' => '2017-04-19'],
-        ]], ['foo.*.end' => ['before:foo.*.start']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['start' => '2016-04-19', 'end' => '2017-04-19'],
+            ],
+        ], ['foo.*.end' => ['before:foo.*.start']]);
         $this->assertTrue($v->fails());
 
-        $v = new Validator($trans, ['foo' => [
-            ['start' => '2016-04-19', 'end' => '2017-04-19'],
-        ]], ['foo.*.end' => ['after:foo.*.start']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['start' => '2016-04-19', 'end' => '2017-04-19'],
+            ],
+        ], ['foo.*.end' => ['after:foo.*.start']]);
         $this->assertTrue($v->passes());
 
-        $v = new Validator($trans, ['foo' => [
-            ['start' => '2016-04-19', 'end' => '2017-04-19'],
-        ]], ['foo.*.start' => ['after:foo.*.end']]);
+        $v = new Validator($trans, [
+            'foo' => [
+                ['start' => '2016-04-19', 'end' => '2017-04-19'],
+            ],
+        ], ['foo.*.start' => ['after:foo.*.end']]);
         $this->assertTrue($v->fails());
     }
 
@@ -4520,17 +4802,20 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 'taylor'],
-            ['name' => new class implements Rule {
-                public function passes($attribute, $value)
+            [
+                'name' => new class implements Rule
                 {
-                    return $value === 'taylor';
-                }
+                    public function passes($attribute, $value)
+                    {
+                        return $value === 'taylor';
+                    }
 
-                public function message()
-                {
-                    return ':attribute must be taylor';
-                }
-            }]
+                    public function message()
+                    {
+                        return ':attribute must be taylor';
+                    }
+                },
+            ]
         );
 
         $this->assertTrue($v->passes());
@@ -4539,17 +4824,22 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 'adam'],
-            ['name' => [new class implements Rule {
-                public function passes($attribute, $value)
-                {
-                    return $value === 'taylor';
-                }
+            [
+                'name' => [
+                    new class implements Rule
+                    {
+                        public function passes($attribute, $value)
+                        {
+                            return $value === 'taylor';
+                        }
 
-                public function message()
-                {
-                    return ':attribute must be taylor';
-                }
-            }]]
+                        public function message()
+                        {
+                            return ':attribute must be taylor';
+                        }
+                    },
+                ],
+            ]
         );
 
         $this->assertTrue($v->fails());
@@ -4559,11 +4849,13 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 'taylor'],
-            ['name.*' => function ($attribute, $value, $fail) {
-                if ($value !== 'taylor') {
-                    $fail(':attribute was '.$value.' instead of taylor');
-                }
-            }]
+            [
+                'name.*' => function ($attribute, $value, $fail) {
+                    if ($value !== 'taylor') {
+                        $fail(':attribute was '.$value.' instead of taylor');
+                    }
+                },
+            ]
         );
 
         $this->assertTrue($v->passes());
@@ -4572,11 +4864,13 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 'adam'],
-            ['name' => function ($attribute, $value, $fail) {
-                if ($value !== 'taylor') {
-                    $fail(':attribute was '.$value.' instead of taylor');
-                }
-            }]
+            [
+                'name' => function ($attribute, $value, $fail) {
+                    if ($value !== 'taylor') {
+                        $fail(':attribute was '.$value.' instead of taylor');
+                    }
+                },
+            ]
         );
 
         $this->assertTrue($v->fails());
@@ -4587,7 +4881,8 @@ class ValidationValidatorTest extends TestCase
             $this->getIlluminateArrayTranslator(),
             ['name' => 'taylor', 'states' => ['AR', 'TX'], 'number' => 9],
             [
-                'states.*' => new class implements Rule {
+                'states.*' => new class implements Rule
+                {
                     public function passes($attribute, $value)
                     {
                         return in_array($value, ['AK', 'HI']);
@@ -4624,17 +4919,20 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 42],
-            ['name' => new class implements Rule {
-                public function passes($attribute, $value)
+            [
+                'name' => new class implements Rule
                 {
-                    return $value === 'taylor';
-                }
+                    public function passes($attribute, $value)
+                    {
+                        return $value === 'taylor';
+                    }
 
-                public function message()
-                {
-                    return [':attribute must be taylor', ':attribute must be a first name'];
-                }
-            }]
+                    public function message()
+                    {
+                        return [':attribute must be taylor', ':attribute must be a first name'];
+                    }
+                },
+            ]
         );
 
         $this->assertTrue($v->fails());
@@ -4645,17 +4943,22 @@ class ValidationValidatorTest extends TestCase
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => 42],
-            ['name' => [new class implements Rule {
-                public function passes($attribute, $value)
-                {
-                    return $value === 'taylor';
-                }
+            [
+                'name' => [
+                    new class implements Rule
+                    {
+                        public function passes($attribute, $value)
+                        {
+                            return $value === 'taylor';
+                        }
 
-                public function message()
-                {
-                    return [':attribute must be taylor', ':attribute must be a first name'];
-                }
-            }, 'string']]
+                        public function message()
+                        {
+                            return [':attribute must be taylor', ':attribute must be a first name'];
+                        }
+                    }, 'string',
+                ],
+            ]
         );
 
         $this->assertTrue($v->fails());
@@ -4664,27 +4967,77 @@ class ValidationValidatorTest extends TestCase
         $this->assertSame('validation.string', $v->errors()->get('name')[2]);
     }
 
+    public function testCustomValidationObjectWithDotKeysIsCorrectlyPassedValue()
+    {
+        $v = new Validator(
+            $this->getIlluminateArrayTranslator(),
+            ['foo' => ['foo.bar' => 'baz']],
+            [
+                'foo' => new class implements Rule
+                {
+                    public function passes($attribute, $value)
+                    {
+                        return $value === ['foo.bar' => 'baz'];
+                    }
+
+                    public function message()
+                    {
+                        return ':attribute must be baz';
+                    }
+                },
+            ]
+        );
+
+        $this->assertTrue($v->passes());
+
+        // Test failed attributes contains proper entries
+        $v = new Validator(
+            $this->getIlluminateArrayTranslator(),
+            ['foo' => ['foo.bar' => 'baz']],
+            [
+                'foo.foo\.bar' => new class implements Rule
+                {
+                    public function passes($attribute, $value)
+                    {
+                        return false;
+                    }
+
+                    public function message()
+                    {
+                        return ':attribute must be baz';
+                    }
+                },
+            ]
+        );
+
+        $this->assertFalse($v->passes());
+        $this->assertTrue(is_array($v->failed()['foo.foo.bar']));
+    }
+
     public function testImplicitCustomValidationObjects()
     {
         // Test passing case...
         $v = new Validator(
             $this->getIlluminateArrayTranslator(),
             ['name' => ''],
-            ['name' => $rule = new class implements ImplicitRule {
-                public $called = false;
-
-                public function passes($attribute, $value)
+            [
+                'name' => $rule = new class implements ImplicitRule
                 {
-                    $this->called = true;
+                    public $called = false;
 
-                    return true;
-                }
+                    public function passes($attribute, $value)
+                    {
+                        $this->called = true;
 
-                public function message()
-                {
-                    return 'message';
-                }
-            }]
+                        return true;
+                    }
+
+                    public function message()
+                    {
+                        return 'message';
+                    }
+                },
+            ]
         );
 
         $this->assertTrue($v->passes());
@@ -4693,9 +5046,9 @@ class ValidationValidatorTest extends TestCase
 
     public function testValidateReturnsValidatedData()
     {
-        $post = ['first' => 'john',  'preferred'=>'john', 'last' => 'doe', 'type' => 'admin'];
+        $post = ['first' => 'john', 'preferred' => 'john', 'last' => 'doe', 'type' => 'admin'];
 
-        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred'=> 'required']);
+        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred' => 'required']);
         $v->sometimes('type', 'required', function () {
             return false;
         });
@@ -4747,9 +5100,9 @@ class ValidationValidatorTest extends TestCase
 
     public function testValidateAndValidatedData()
     {
-        $post = ['first' => 'john',  'preferred'=>'john', 'last' => 'doe', 'type' => 'admin'];
+        $post = ['first' => 'john', 'preferred' => 'john', 'last' => 'doe', 'type' => 'admin'];
 
-        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred'=> 'required']);
+        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred' => 'required']);
         $v->sometimes('type', 'required', function () {
             return false;
         });
@@ -4762,10 +5115,10 @@ class ValidationValidatorTest extends TestCase
 
     public function testValidatedNotValidateTwiceData()
     {
-        $post = ['first' => 'john',  'preferred'=>'john', 'last' => 'doe', 'type' => 'admin'];
+        $post = ['first' => 'john', 'preferred' => 'john', 'last' => 'doe', 'type' => 'admin'];
 
         $validateCount = 0;
-        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred'=> 'required']);
+        $v = new Validator($this->getIlluminateArrayTranslator(), $post, ['first' => 'required', 'preferred' => 'required']);
         $v->after(function () use (&$validateCount) {
             $validateCount++;
         });
@@ -5005,25 +5358,26 @@ class ValidationValidatorTest extends TestCase
                     'vehicles.*.wheels.*.shape' => 'exclude_unless:vehicles.*.wheels.*.color,red|required|in:square,round',
                 ], [
                     'vehicles' => [
-                        ['type' => 'car', 'wheels' => [
-                            ['color' => 'red', 'shape' => 'square'],
-                            ['color' => 'blue', 'shape' => 'hexagon'],
-                            ['color' => 'red', 'shape' => 'round', 'junk' => 'no rule, still present'],
-                            ['color' => 'blue', 'shape' => 'triangle'],
-                        ]],
+                        [
+                            'type' => 'car', 'wheels' => [
+                                ['color' => 'red', 'shape' => 'square'],
+                                ['color' => 'blue', 'shape' => 'hexagon'],
+                                ['color' => 'red', 'shape' => 'round', 'junk' => 'no rule, still present'],
+                                ['color' => 'blue', 'shape' => 'triangle'],
+                            ],
+                        ],
                         ['type' => 'boat'],
                     ],
                 ], [
                     'vehicles' => [
-                        ['type' => 'car', 'wheels' => [
-                            // The shape field for these blue wheels were correctly excluded (if they weren't, they would
-                            // fail the validation). They still appear in the validated data. This behaviour is unrelated
-                            // to the "exclude" type rules.
-                            ['color' => 'red', 'shape' => 'square'],
-                            ['color' => 'blue', 'shape' => 'hexagon'],
-                            ['color' => 'red', 'shape' => 'round', 'junk' => 'no rule, still present'],
-                            ['color' => 'blue', 'shape' => 'triangle'],
-                        ]],
+                        [
+                            'type' => 'car', 'wheels' => [
+                                ['color' => 'red', 'shape' => 'square'],
+                                ['color' => 'blue'],
+                                ['color' => 'red', 'shape' => 'round', 'junk' => 'no rule, still present'],
+                                ['color' => 'blue'],
+                            ],
+                        ],
                         ['type' => 'boat'],
                     ],
                 ],
@@ -5128,12 +5482,14 @@ class ValidationValidatorTest extends TestCase
                     'vehicles.*.wheels.*.shape' => 'exclude_unless:vehicles.*.wheels.*.color,red|required|in:square,round',
                 ], [
                     'vehicles' => [
-                        ['type' => 'car', 'wheels' => [
-                            ['color' => 'red', 'shape' => 'square'],
-                            ['color' => 'blue', 'shape' => 'hexagon'],
-                            ['color' => 'red', 'shape' => 'hexagon'],
-                            ['color' => 'blue', 'shape' => 'triangle'],
-                        ]],
+                        [
+                            'type' => 'car', 'wheels' => [
+                                ['color' => 'red', 'shape' => 'square'],
+                                ['color' => 'blue', 'shape' => 'hexagon'],
+                                ['color' => 'red', 'shape' => 'hexagon'],
+                                ['color' => 'blue', 'shape' => 'triangle'],
+                            ],
+                        ],
                         ['type' => 'boat', 'wheels' => 'should be excluded'],
                     ],
                 ], [

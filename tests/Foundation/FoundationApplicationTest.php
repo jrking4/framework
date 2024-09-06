@@ -45,7 +45,8 @@ class FoundationApplicationTest extends TestCase
     public function testClassesAreBoundWhenServiceProviderIsRegistered()
     {
         $app = new Application;
-        $app->register($provider = new class($app) extends ServiceProvider {
+        $app->register($provider = new class($app) extends ServiceProvider
+        {
             public $bindings = [
                 AbstractClass::class => ConcreteClass::class,
             ];
@@ -62,7 +63,8 @@ class FoundationApplicationTest extends TestCase
     public function testSingletonsAreCreatedWhenServiceProviderIsRegistered()
     {
         $app = new Application;
-        $app->register($provider = new class($app) extends ServiceProvider {
+        $app->register($provider = new class($app) extends ServiceProvider
+        {
             public $singletons = [
                 AbstractClass::class => ConcreteClass::class,
             ];
@@ -85,6 +87,18 @@ class FoundationApplicationTest extends TestCase
         $app->register($provider);
 
         $this->assertArrayHasKey($class, $app->getLoadedProviders());
+    }
+
+    public function testServiceProvidersCouldBeLoaded()
+    {
+        $provider = m::mock(ServiceProvider::class);
+        $class = get_class($provider);
+        $provider->shouldReceive('register')->once();
+        $app = new Application;
+        $app->register($provider);
+
+        $this->assertTrue($app->providerIsLoaded($class));
+        $this->assertFalse($app->providerIsLoaded(ApplicationBasicServiceProviderStub::class));
     }
 
     public function testDeferredServicesMarkedAsBound()

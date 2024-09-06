@@ -1,6 +1,560 @@
 # Release Notes for 7.x
 
-## [Unreleased](https://github.com/laravel/framework/compare/v7.10.1...7.x)
+## [Unreleased](https://github.com/laravel/framework/compare/v7.30.6...7.x)
+
+
+## [v7.30.6 (2021-12-07)](https://github.com/laravel/framework/compare/v7.30.5...v7.30.6)
+
+### Fixed
+- Added phar to list to the shouldBlockPhpUpload in Validator ([f647a24](https://github.com/laravel/framework/commit/f647a24b918648c2b8a17c122b855bc0b2bf5b86))
+- Fixed parent call in View ([#39909](https://github.com/laravel/framework/pull/39909))
+
+
+## [v7.30.5 (2021-11-17)](https://github.com/laravel/framework/compare/v7.30.4...v7.30.5)
+
+### Added
+- Added new line to `DetectsLostConnections` ([#36373](https://github.com/laravel/framework/pull/36373))
+
+### Fixed
+- Fixed `Illuminate\View\ViewException::report()` ([#36110](https://github.com/laravel/framework/pull/36110))
+- Fixed `Illuminate\Redis\Connections\PhpRedisConnection::spop()` ([#36106](https://github.com/laravel/framework/pull/36106))
+- Fixed `Illuminate/Database/Query/Builder::limit()` to only cast integer when given other than null ([#39653](https://github.com/laravel/framework/pull/39653))
+- Fixes database offset value with non numbers ([#39656](https://github.com/laravel/framework/pull/39656))
+
+### Changed
+- Pipe new through render and report exception methods ([#36037](https://github.com/laravel/framework/pull/36037))
+- Typecast page number as integer in `Illuminate\Pagination\AbstractPaginator::resolveCurrentPage()` ([#36055](https://github.com/laravel/framework/pull/36055))
+
+
+## [v7.30.4 (2021-01-21)](https://github.com/laravel/framework/compare/v7.30.3...v7.30.4)
+
+### Fixed
+- Fixed empty html mail ([#35941](https://github.com/laravel/framework/pull/35941))
+- Fixed type error in `Illuminate\Http\Concerns\InteractsWithContentTypes::isJson()` ([#35956](https://github.com/laravel/framework/pull/35956))
+- Limit expected bindings ([#35972](https://github.com/laravel/framework/pull/35972), [006873d](https://github.com/laravel/framework/commit/006873df411d28bfd03fea5e7f91a2afe3918498))
+
+
+## [v7.30.3 (2021-01-15)](https://github.com/laravel/framework/compare/v7.30.2...v7.30.3)
+
+
+## [v7.30.2 (2021-01-13)](https://github.com/laravel/framework/compare/v7.30.1...v7.30.2)
+
+### Added
+- Added strings to `DetectsLostConnections` ([#35752](https://github.com/laravel/framework/pull/35752))
+
+### Fixed
+- Fixed error from missing null check on PHP 8 ([#35797](https://github.com/laravel/framework/pull/35797))
+- Limit expected bindings ([#35865](https://github.com/laravel/framework/pull/35865))
+
+### Changed
+- Retry connection if DNS lookup fails ([#35790](https://github.com/laravel/framework/pull/35790))
+
+
+## [v7.30.1 (2020-12-22)](https://github.com/laravel/framework/compare/v7.30.0...v7.30.1)
+
+### Fixed
+- Backport for fix issue with polymorphic morphMaps with literal 0 ([#35487](https://github.com/laravel/framework/pull/35487))
+- Fixed mime validation for jpeg files ([#35518](https://github.com/laravel/framework/pull/35518))
+- Fixed `Illuminate\Validation\Concerns\ValidatesAttributes::validateJson()` for PHP8 ([#35646](https://github.com/laravel/framework/pull/35646))
+- Catch DecryptException with invalid X-XSRF-TOKEN in `Illuminate\Foundation\Http\Middleware\VerifyCsrfToken` ([#35671](https://github.com/laravel/framework/pull/35671))
+
+
+## [v7.30.0 (2020-12-01)](https://github.com/laravel/framework/compare/v7.29.3...v7.30.0)
+
+### Fixed
+- Turn the eloquent collection into a base collection if mapWithKeys loses models ([#35129](https://github.com/laravel/framework/pull/35129))
+- Fixed pivot restoration ([#35218](https://github.com/laravel/framework/pull/35218))
+- Fixing BroadcastException message in PusherBroadcaster@broadcast ([#35290](https://github.com/laravel/framework/pull/35290))
+- Fixed generic DetectsLostConnection string ([#35323](https://github.com/laravel/framework/pull/35323))
+- Backport Redis context option ([#35370](https://github.com/laravel/framework/pull/35370))
+- Fixed validating image/jpeg images after Symfony/Mime update ([#35419](https://github.com/laravel/framework/pull/35419))
+
+### Changed
+- Updated `aws/aws-sdk-php` suggest to `^3.155` ([#35267](https://github.com/laravel/framework/pull/35267))
+
+
+## [v7.29.3 (2020-11-03)](https://github.com/laravel/framework/compare/v7.29.2...v7.29.3)
+
+### Fixed
+- Added php 8 support for Illuminate Testing 7.x ([#35045](https://github.com/laravel/framework/pull/35045))
+
+
+## [v7.29.2 (2020-10-29)](https://github.com/laravel/framework/compare/v7.29.1...v7.29.2)
+
+### Fixed
+- [Add some fixes](https://github.com/laravel/framework/compare/v7.29.1...v7.29.2) 
+
+
+## [v7.29.1 (2020-10-29)](https://github.com/laravel/framework/compare/v7.29.0...v7.29.1)
+
+### Fixed
+- Fixed alias usage in `Eloquent` ([6091048](https://github.com/laravel/framework/commit/609104806b8b639710268c75c22f43034c2b72db))
+- Fixed `Illuminate\Support\Reflector::isCallable()` ([a90f344](https://github.com/laravel/framework/commit/a90f344c66f0a5bb1d718f8bbd20c257d4de9e02))
+
+
+## [v7.29.0 (2020-10-29)](https://github.com/laravel/framework/compare/v7.28.4...v7.29.0)
+
+### Added
+- Full PHP 8.0 Support ([#34884](https://github.com/laravel/framework/pull/34884), [28bb76e](https://github.com/laravel/framework/commit/28bb76efbcfc5fee57307ffa062b67ff709240dc), [#33388](https://github.com/laravel/framework/pull/33388))
+- Added `Illuminate\Support\Reflector::isCallable()` ([#34994](https://github.com/laravel/framework/pull/34994), [8c16891](https://github.com/laravel/framework/commit/8c16891c6e7a4738d63788f4447614056ab5136e), [31917ab](https://github.com/laravel/framework/commit/31917abcfa0db6ec6221bb07fc91b6e768ff5ec8), [11cfa4d](https://github.com/laravel/framework/commit/11cfa4d4c92bf2f023544d58d51b35c5d31dece0), [#34999](https://github.com/laravel/framework/pull/34999))
+
+### Changed
+- Bump minimum PHP version to v7.2.5 ([#34928](https://github.com/laravel/framework/pull/34928))
+
+### Fixed
+- Fixed ambigious column on many to many with select load ([5007986](https://github.com/laravel/framework/commit/500798623d100a9746b2931ae6191cb756521f05))
+ 
+
+## [v7.28.4 (2020-10-06)](https://github.com/laravel/framework/compare/v7.28.3...v7.28.4)
+
+### Fixed
+- Added missed RESET_THROTTLED constant to Password Facade ([#34641](https://github.com/laravel/framework/pull/34641))
+
+
+## [v7.28.3 (2020-09-17)](https://github.com/laravel/framework/compare/v7.28.2...v7.28.3)
+
+### Fixed
+- Fixed problems with dots in validator ([#34355](https://github.com/laravel/framework/pull/34355))
+
+
+## [v7.28.2 (2020-09-15)](https://github.com/laravel/framework/compare/v7.28.1...v7.28.2)
+
+### Fixed
+- Do not used `now` helper in `Illuminate/Cache/DatabaseLock::expiresAt()` ([#34262](https://github.com/laravel/framework/pull/34262))
+- Fixed `Illuminate\View\ComponentAttributeBag::whereDoesntStartWith()` ([#34329](https://github.com/laravel/framework/pull/34329))
+
+
+## [v7.28.1 (2020-09-09)](https://github.com/laravel/framework/compare/v7.28.0...v7.28.1)
+
+### Revert
+- Revert of ["Fixed for empty fallback_locale in `Illuminate\Translation\Translator`"](https://github.com/laravel/framework/pull/34136) ([7c54eb6](https://github.com/laravel/framework/commit/7c54eb678d58fb9ee7f532a5a5842e6f0e1fe4c9))
+
+
+## [v7.28.0 (2020-09-08)](https://github.com/laravel/framework/compare/v7.27.0...v7.28.0)
+
+### Added
+- Added expectsTable console assertion ([74e1fca](https://github.com/laravel/framework/commit/74e1fca5fa333e32e24a7aa24049d5303a1bf281), [c6cf381](https://github.com/laravel/framework/commit/c6cf38139d2524a7c3accb606e3fb1b035c98d6a))
+
+### Fixed
+- Use `getTouchedRelations` when touching owners ([#34100](https://github.com/laravel/framework/pull/34100))
+- Fixed for empty fallback_locale in `Illuminate\Translation\Translator` ([#34136](https://github.com/laravel/framework/pull/34136))
+- Fixed `Illuminate\Database\Schema\Grammars\SqlServerGrammar::compileColumnListing()` for tables with schema ([#34076](https://github.com/laravel/framework/pull/34076))
+- Fixed Significant performance issue in Eloquent Collection loadCount() method ([#34177](https://github.com/laravel/framework/pull/34177))
+
+
+## [v7.27.0 (2020-09-01)](https://github.com/laravel/framework/compare/v7.26.1...v7.27.0)
+
+### Added
+- Allow to use alias of morphed model ([#34032](https://github.com/laravel/framework/pull/34032))
+- Introduced basic padding (both, left, right) methods to Str and Stringable ([#34053](https://github.com/laravel/framework/pull/34053))
+
+### Refactoring
+- RefreshDatabase migration commands parameters moved to methods ([#34007](https://github.com/laravel/framework/pull/34007), [8b35c8e](https://github.com/laravel/framework/commit/8b35c8e6ba5879e71fd81fd03b5687ee2b46c55a), [256f71c](https://github.com/laravel/framework/commit/256f71c1f81da2d4bb3e327b18389ac43fa97a72))
+
+### Changed
+- Allow to reset forced scheme and root-url in UrlGenerator ([#34039](https://github.com/laravel/framework/pull/34039))
+- Updating the make commands to use a custom views path ([#34060](https://github.com/laravel/framework/pull/34060), [b593c62](https://github.com/laravel/framework/commit/b593c6242942623fcc12638d0390da7c58dbbb11))
+- Using "public static property" in View Component causes an error ([#34058](https://github.com/laravel/framework/pull/34058))
+- Changed postgres processor ([#34055](https://github.com/laravel/framework/pull/34055))
+
+
+## [v7.26.1 (2020-08-27)](https://github.com/laravel/framework/compare/v7.26.0...v7.26.1)
+
+### Fixed
+- Fixed offset error on invalid remember token ([#34020](https://github.com/laravel/framework/pull/34020))
+- Only prepend scheme to PhpRedis host when necessary ([#34017](https://github.com/laravel/framework/pull/34017))
+- Fixed `whereKey` and `whereKeyNot` in `Illuminate\Database\Eloquent\Builder` ([#34031](https://github.com/laravel/framework/pull/34031))
+
+
+## [v7.26.0 (2020-08-25)](https://github.com/laravel/framework/compare/v7.25.0...v7.26.0)
+
+### Added
+- Added `whenHas` and `whenFilled` methods to  `Illuminate\Http\Concerns\InteractsWithInput` class ([#33829](https://github.com/laravel/framework/pull/33829))
+- Added email validating with custom class ([#33835](https://github.com/laravel/framework/pull/33835))
+- Added `Illuminate\View\ComponentAttributeBag::whereDoesntStartWith()` ([#33851](https://github.com/laravel/framework/pull/33851))
+- Allow setting synchronous_commit for Postgres ([#33897](https://github.com/laravel/framework/pull/33897))
+- Allow nested errors in `Illuminate\Testing\TestResponse::assertJsonValidationErrors()` ([#33989](https://github.com/laravel/framework/pull/33989))
+- Added support for stream reads to `FilesystemManager` ([#34001](https://github.com/laravel/framework/pull/34001))
+
+### Fixed
+- Fix defaultTimezone not respected in scheduled Events ([#33834](https://github.com/laravel/framework/pull/33834))
+- Fixed usage of Support `Collection#countBy($key)` ([#33852](https://github.com/laravel/framework/pull/33852))
+- Fixed route registerar bug ([42ba0ef](https://github.com/laravel/framework/commit/42ba0ef3e379cb1e0fa38c3d3297109ff1234a1d))
+- Fixed key composition for attribute with dot at validation error messages ([#33932](https://github.com/laravel/framework/pull/33932))
+- Fixed the `dump` method for `LazyCollection` ([#33944](https://github.com/laravel/framework/pull/33944))
+- Fixed dimension ratio calculation in `Illuminate\Validation\Concerns\ValidatesAttributes::failsRatioCheck()` ([#34003](https://github.com/laravel/framework/pull/34003))
+
+### Changed
+- Implement LockProvider on DatabaseStore ([#33844](https://github.com/laravel/framework/pull/33844))
+- Publish resources.stub in stub:publish command ([#33862](https://github.com/laravel/framework/pull/33862))
+- Handle argon failures robustly ([#33856](https://github.com/laravel/framework/pull/33856))
+- Normalize scheme in Redis connections ([#33892](https://github.com/laravel/framework/pull/33892))
+- Cast primary key to string when $keyType is string ([#33930](https://github.com/laravel/framework/pull/33930))
+- Load anonymous components from packages ([#33954](https://github.com/laravel/framework/pull/33954))
+- Check no-interaction flag exists and is true for Artisan commands ([#33950](https://github.com/laravel/framework/pull/33950))
+
+### Deprecated
+- Deprecate `Illuminate\Database\Eloquent\Model::removeTableFromKey()` ([#33859](https://github.com/laravel/framework/pull/33859))
+
+
+## [v7.25.0 (2020-08-11)](https://github.com/laravel/framework/compare/v7.24.0...v7.25.0)
+
+### Added
+- Added support to use `where` in `apiResource` method ([#33790](https://github.com/laravel/framework/pull/33790), [3dcc4a6](https://github.com/laravel/framework/commit/3dcc4a6bc6640b3d577c6740d63b6ef3df42e124))
+- Support `tls://` scheme when using `url` in Redis config ([#33800](https://github.com/laravel/framework/pull/33800))
+- Scoped resource routes ([#33752](https://github.com/laravel/framework/pull/33752))
+- Added Once blade Blocks ([#33812](https://github.com/laravel/framework/pull/33812))
+- Let mailables accept a simple array of email addresses as cc or bcc ([#33810](https://github.com/laravel/framework/pull/33810))
+- Added support for PhpRedis 5.3 options parameter ([#33799](https://github.com/laravel/framework/pull/33799))
+
+### Changed
+- Removed quotes when setting isolation level for mysql connections ([#33805](https://github.com/laravel/framework/pull/33805))
+- Make LazyCollection#countBy be lazy ([#33801](https://github.com/laravel/framework/pull/33801))
+
+### Fixed
+- Revert changes to MailMessage ([#33816](https://github.com/laravel/framework/pull/33816))
+
+
+## [v7.24.0 (2020-08-07)](https://github.com/laravel/framework/compare/v7.23.2...v7.24.0)
+
+### Added
+- Added possibility to configure isolation level for mysql connections ([#33783](https://github.com/laravel/framework/pull/33783), [c6a3174](https://github.com/laravel/framework/commit/c6a317405e5e9075206a019246a8a79d0c68def4))
+- Added plain text only notifications ([#33781](https://github.com/laravel/framework/pull/33781))
+
+### Changed
+- Verify column names are actual columns when using guarded ([#33777](https://github.com/laravel/framework/pull/33777))
+
+
+## [v7.23.2 (2020-08-06)](https://github.com/laravel/framework/compare/v7.23.1...v7.23.2)
+
+### Fixed
+- Fixed `Illuminate\Support\Arr::query()` ([c6f9ae2](https://github.com/laravel/framework/commit/c6f9ae2b6fdc3c1716938223de731b97f6a5a255))
+- Don't allow mass filling with table names ([9240404](https://github.com/laravel/framework/commit/9240404b22ef6f9e827577b3753e4713ddce7471), [f5fa6e3](https://github.com/laravel/framework/commit/f5fa6e3a0fbf9a93eab45b9ae73265b4dbfc3ad7))
+
+
+## [v7.23.1 (2020-08-06)](https://github.com/laravel/framework/compare/v7.23.0...v7.23.1)
+
+### Added
+- Added isNotFilled() method to Request ([#33732](https://github.com/laravel/framework/pull/33732))
+
+### Fixed
+- Fixed `Illuminate\Database\Eloquent\Concerns\GuardsAttributes::isGuarded()` ([1b70bef](https://github.com/laravel/framework/commit/1b70bef5fd7cc5da74abcdf79e283f830fa3b0a4), [624d873](https://github.com/laravel/framework/commit/624d873733388aa2246553a3b465e38554953180), [b70876a](https://github.com/laravel/framework/commit/b70876ac80759fbf168c91cdffd7a2b2305e27cb))
+- Fixed escaping quotes ([687df01](https://github.com/laravel/framework/commit/687df01fa19c99546c1ae1dd53c2a465459b50dc))
+
+
+## [v7.23.0 (2020-08-04)](https://github.com/laravel/framework/compare/v7.22.4...v7.23.0)
+
+### Added
+- Added dynamic slot (directive) name support ([#33724](https://github.com/laravel/framework/pull/33724))
+- Added plain mail to notifications ([#33725](https://github.com/laravel/framework/pull/33725))
+- Support the `sink` option when using Http::fake() ([#33720](https://github.com/laravel/framework/pull/33720), [fba984b](https://github.com/laravel/framework/commit/fba984b05081f8aee19447caa0d92624bcf04312))
+- Added whereBetweenColumns | orWhereBetweenColumns | whereNotBetweenColumns | orWhereNotBetweenColumns methods to `Illuminate\Database\Query\Builder` ([#33728](https://github.com/laravel/framework/pull/33728))
+
+### Changed
+- Ignore numeric field names in validators ([#33712](https://github.com/laravel/framework/pull/33712))
+- Fixed validation rule 'required_unless' when other field value is boolean. ([#33715](https://github.com/laravel/framework/pull/33715))
+
+
+## [v7.22.4 (2020-07-27)](https://github.com/laravel/framework/compare/v7.22.3...v7.22.4)
+
+### Update
+- Update cookies encryption ([release](https://github.com/laravel/framework/compare/v7.22.3...v7.22.4))
+
+
+## [v7.22.3 (2020-07-27)](https://github.com/laravel/framework/compare/v7.22.2...v7.22.3)
+
+### Update
+- Update cookies encryption ([release](https://github.com/laravel/framework/compare/v7.22.2...v7.22.3))
+
+
+## [v7.22.2 (2020-07-27)](https://github.com/laravel/framework/compare/v7.22.1...v7.22.2)
+
+### Fixed
+- Fixed cookie issues encryption ([c9ce261](https://github.com/laravel/framework/commit/c9ce261a9f7b8e07c9ebc8a7d45651ee1cf86215), [5786aa4](https://github.com/laravel/framework/commit/5786aa4a388adfcc62862573275bd37d49aa07d7))
+
+
+## [v7.22.1 (2020-07-27)](https://github.com/laravel/framework/compare/v7.22.0...v7.22.1)
+
+### Fixed
+- Fixed cookie issues ([bb9db21](https://github.com/laravel/framework/commit/bb9db21af137344feffa192fcabe4e439c8b0f60))
+
+
+## [v7.22.0 (2020-07-27)](https://github.com/laravel/framework/compare/v7.21.0...v7.22.0)
+
+### Added
+- Added `sectionMissing` Blade Directive ([#33614](https://github.com/laravel/framework/pull/33614))
+- Added range option to queue:retry command ([#33627](https://github.com/laravel/framework/pull/33627))
+
+### Fixed
+- Prevent usage of get*AtColumn() when model has no timestamps ([#33634](https://github.com/laravel/framework/pull/33634))
+- Don't decrement transaction below 0 in `Illuminate\Database\Concerns\ManagesTransactions::handleCommitTransactionException()` ([7681795](https://github.com/laravel/framework/commit/768179578e5492b5f80c391bd43b233938e16e27))
+- Fixed transaction problems on closure transaction ([c4cdfc7](https://github.com/laravel/framework/commit/c4cdfc7c54127b772ef10f37cfc9ef8e9d6b3227))
+- Prevent to serialize uninitialized properties ([#33644](https://github.com/laravel/framework/pull/33644))
+- Fixed missing statement preventing deletion in `Illuminate\Database\Eloquent\Relations\MorphPivot::delete()` ([#33648](https://github.com/laravel/framework/pull/33648))
+
+### Changed
+- Throw a TypeError if concrete is not a string or closure in `Illuminate\Container\Container::bind()` ([#33539](https://github.com/laravel/framework/pull/33539))
+- Add HTML comment block around inline inspiring quote for consistency with blade template version ([#33625](https://github.com/laravel/framework/pull/33625))
+- Improve cookie encryption ([#33662](https://github.com/laravel/framework/pull/33662))
+
+
+## [v7.21.0 (2020-07-21)](https://github.com/laravel/framework/compare/v7.20.0...v7.21.0)
+
+### Added
+- Added `Illuminate\Database\Schema\ForeignKeyDefinition::nullOnDelete()` ([#33551](https://github.com/laravel/framework/pull/33551))
+- Added `getFallbackLocale()` and `setFallbackLocale()` methods to `Illuminate\Foundation\Application` ([#33595](https://github.com/laravel/framework/pull/33595))
+
+### Fixed
+- Fixed `Illuminate/Redis/Connections/PhpRedisConnection::*scan()` returns ([d3d36f0](https://github.com/laravel/framework/commit/d3d36f059ef1c56e17d8e434e9fd3dfd6cbe6e53))
+- Align (fix) nested arrays support for `assertViewHas` & `assertViewMissing` in `Illuminate\Testing\TestResponse` ([#33566](https://github.com/laravel/framework/pull/33566))
+- Fixed issue where Storage::path breaks when using cache due to missing method in CachedAdapter ([#33602](https://github.com/laravel/framework/pull/33602))
+
+### Changed
+- Added a base exception for Http Client exceptions ([#33581](https://github.com/laravel/framework/pull/33581))
+
+
+## [v7.20.0 (2020-07-14)](https://github.com/laravel/framework/compare/v7.19.1...v7.20.0)
+
+### Added
+- Added `Illuminate\Database\Schema\ForeignKeyDefinition::cascadeOnUpdate()` ([#33522](https://github.com/laravel/framework/pull/33522))
+
+### Changed
+- Apply model connection name to Database validation rules ([#33525](https://github.com/laravel/framework/pull/33525))
+- Allow calling invokable classes using FQN in `Illuminate\Container\BoundMethod.php::call()` ([#33535](https://github.com/laravel/framework/pull/33535))
+
+
+## [v7.19.1 (2020-07-10)](https://github.com/laravel/framework/compare/v7.19.0...v7.19.1)
+
+### Added
+- Added support for SQL Server LoginTimeout to specify seconds to wait before failing connection attempt ([#33472](https://github.com/laravel/framework/pull/33472))
+- Added ability to simulate "withCredentials" in test requests ([#33497](https://github.com/laravel/framework/pull/33497), [aa17e75](https://github.com/laravel/framework/commit/aa17e75f216c58f03652625866f5ac5c2fcbcab7))
+
+### Fixed
+- Fixed `Illuminate\Cache\FileStore::flush()` ([#33458](https://github.com/laravel/framework/pull/33458))
+- Fixed auto creating model by class name ([#33481](https://github.com/laravel/framework/pull/33481))
+- Don't return nested data from validator when failing an exclude rule ([#33435](https://github.com/laravel/framework/pull/33435))
+- Fixed validation nested error messages ([6615371](https://github.com/laravel/framework/commit/6615371d7c0a7431372244d21eae54696b3c19f2))
+- Fixed `Illuminate\Support\Reflector` to handle parent ([#33502](https://github.com/laravel/framework/pull/33502))
+
+### Revert
+- Revert [Improve SQL Server last insert id retrieval](https://github.com/laravel/framework/pull/33453) ([#33496](https://github.com/laravel/framework/pull/33496))
+
+
+## [v7.19.0 (2020-07-07)](https://github.com/laravel/framework/compare/v7.18.0...v7.19.0)
+
+### Added
+- Added `everyTwoHours()` | `everyThreeHours()` | `everyFourHours()` | `everySixHours()` methods to `Illuminate\Console\Scheduling\ManagesFrequencies` ([#33393](https://github.com/laravel/framework/pull/33393))
+- Conditionally returning appended attributes in API resources ([#33422](https://github.com/laravel/framework/pull/33422))
+- Added `ScheduledTaskFailed` event ([#33427](https://github.com/laravel/framework/pull/33427))
+- Added `Illuminate\Support\Stringable::when()` ([#33455](https://github.com/laravel/framework/pull/33455))
+
+### Fixed
+- Fixed signed urls with custom parameters ([bcb133e](https://github.com/laravel/framework/commit/bcb133e46906e748067772cf49b2f355441815c5))
+- Determine model key name correctly in Illuminate/Validation/Concerns/ValidatesAttributes.php ([a1fdd53](https://github.com/laravel/framework/commit/a1fdd536c542dabbe9882f50e849cc177dc0ad88))
+- Fixed notifications database channel for anonymous notifiables ([#33409](https://github.com/laravel/framework/pull/33409))
+
+### Changed
+- Improve SQL Server last insert id retrieval ([#33430](https://github.com/laravel/framework/pull/33430), [de1d159](https://github.com/laravel/framework/commit/de1d1592f3a69bd9952431ee67e76996d00e001c))
+- Make Str::endsWith return false if both haystack and needle are empty strings ([#33434](https://github.com/laravel/framework/pull/33434))
+
+
+## [v7.18.0 (2020-06-30)](https://github.com/laravel/framework/compare/v7.17.2...v7.18.0)
+
+### Added
+- Added `Illuminate\Http\Client\PendingRequest::withMiddleware()` ([#33315](https://github.com/laravel/framework/pull/33315), [b718d3a](https://github.com/laravel/framework/commit/b718d3a06d7009c0fd0237222602c1e42681b6a3))
+- Make ComponentAttributeBag Macroable ([#33354](https://github.com/laravel/framework/pull/33354))
+- Added `filter` and `whereStartsWith` and `thatStartWith` to `Illuminate\View\ComponentAttributeBag` ([0abe2db](https://github.com/laravel/framework/commit/0abe2dbed9d9b1c4a733a4c24e8383d747134286), [07ee3e8](https://github.com/laravel/framework/commit/07ee3e820b34df5e422fb868886fd190880dfc7f))
+- Added `Illuminate\Database\Eloquent\Collection::toQuery()` ([#33356](https://github.com/laravel/framework/pull/33356), [15586fa](https://github.com/laravel/framework/commit/15586fa6691884db18627721f6e143c3e035ddc0))
+- Added `first()` to `Illuminate\View\ComponentAttributeBag` ([#33358](https://github.com/laravel/framework/pull/33358), [731b94f](https://github.com/laravel/framework/commit/731b94f1734dcdb97a9466948111ab639ac11a2a))
+- Added `everyTwoMinutes()` | `everyThreeMinutes()` | `everyFourMinutes()` methods to `Illuminate/Console/Scheduling/ManagesFrequencies` ([#33379](https://github.com/laravel/framework/pull/33379))
+
+### Fixed
+- Fixed `ConfigurationUrlParser` query decoding ([#33340](https://github.com/laravel/framework/pull/33340))
+- Fixed exists in `Illuminate\Database\Eloquent\Relations\Concerns\AsPivot::delete()` ([#33347](https://github.com/laravel/framework/pull/33347))
+
+### Changed
+- Replace placeholder for dots and asterisks in validator ([#33367](https://github.com/laravel/framework/pull/33367))
+
+
+## [v7.17.2 (2020-06-24)](https://github.com/laravel/framework/compare/v7.17.1...v7.17.2)
+
+### Added
+- Added `Illuminate\Http\Client\PendingRequest::withBody()` method ([1e1f531](https://github.com/laravel/framework/commit/1e1f5311f062d62468fe2d3cef1695b8fa338cfb), [7b0b437](https://github.com/laravel/framework/commit/7b0b4375bbe231a3b96c739ff144b1df1465a387))
+
+### Fixed
+- Fixed `Illuminate\Database\Eloquent\Concerns\HasAttributes::getOriginal()` ([b20125d](https://github.com/laravel/framework/commit/b20125d7bf270bcd6cc651114512a2dc7f182a96), [899c765](https://github.com/laravel/framework/commit/899c765e89573d8a64e16b008af519096e12d534), [2937cce](https://github.com/laravel/framework/commit/2937cce360f4feb96e93d6cf86e24f2e8c0832fc))
+
+### Revert
+- Revert "Fixed `Model::originalIsEquivalent()` with floats ([#33259](https://github.com/laravel/framework/pull/33259), [d68d915](https://github.com/laravel/framework/commit/d68d91516db6d1b9cba8a72f99b2c7e8223e988f))" [bf3cb6f](https://github.com/laravel/framework/commit/bf3cb6f6979df2d6965d2e0aa731724d0e2b15e5)
+
+
+## [v7.17.1 (2020-06-23)](https://github.com/laravel/framework/compare/v7.17.0...v7.17.1)
+
+### Fixed
+- Fixed "Undefined variable: current" exception  in `Illuminate\Database\Eloquent\Concerns\HasAttributes::originalIsEquivalent()` [#33308](https://github.com/laravel/framework/pull/33308)
+
+
+## [v7.17.0 (2020-06-23)](https://github.com/laravel/framework/compare/v7.16.1...v7.17.0)
+
+### Added
+- Added `Illuminate\Console\Scheduling\ManagesFrequencies::lastDayOfMonth()` ([#33241](https://github.com/laravel/framework/pull/33241), [be194a8](https://github.com/laravel/framework/commit/be194a8a7b302fa68b1b2ed66d440f9f91dfec9f))
+- Allow array based event listeners ([7594267](https://github.com/laravel/framework/commit/75942673f6f54dc70fec246051171183af8e06e3))
+- Allow array callback format with non-static methods in `Illuminate\Auth\Access\Gate::define()` ([b7977d3](https://github.com/laravel/framework/commit/b7977d322a2c9baf28cc127cee09c70727c5f56e))
+- Added `Illuminate\Console\Scheduling\ManagesFrequencies::time()` parameter on twiceMonthly function ([#33274](https://github.com/laravel/framework/pull/33274))
+- Added `providerIsLoaded` method to `Illuminate\Foundation\Application` ([#33286](https://github.com/laravel/framework/pull/33286), [b87233f](https://github.com/laravel/framework/commit/b87233f48da0b4f219adebd851acd22058dfd551))
+
+### Fixed
+- Fixed domain binding with custom fields in `Illuminate\Routing\Route::domain()` ([#33231](https://github.com/laravel/framework/pull/33231))
+- Fixed `Model::originalIsEquivalent()` with floats ([#33259](https://github.com/laravel/framework/pull/33259), [d68d915](https://github.com/laravel/framework/commit/d68d91516db6d1b9cba8a72f99b2c7e8223e988f))
+
+
+## [v7.16.1 (2020-06-16)](https://github.com/laravel/framework/compare/v7.16.0...v7.16.1)
+
+### Revert
+- Revert "handle array callbacks" in event dispatcher ([4e3fedb](https://github.com/laravel/framework/commit/4e3fedb2a401986676f9d6aa5f244e95e9c92444))
+
+
+## [v7.16.0 (2020-06-16)](https://github.com/laravel/framework/compare/v7.15.0...v7.16.0)
+
+### Added
+- Added `makeVisibleIf` and `makeHiddenIf` methods to `Illuminate\Database\Eloquent\Concerns\HidesAttributes` ([#33176](https://github.com/laravel/framework/pull/33176), [42383e4](https://github.com/laravel/framework/commit/42383e4ba8806ac0ab69f80d0325fa01fd9c30f4))
+- Added option to specify a custom guard for the `make:policy` command ([#33210](https://github.com/laravel/framework/pull/33210), [13e3b65](https://github.com/laravel/framework/commit/13e3b65bad5062eeba34aa2f39effd0fc4081ccd))
+- Added `theme` property to `Illuminate\Mail\Mailable` class ([#33218](https://github.com/laravel/framework/pull/33218))
+
+### Changed
+- Improved the reflector ([#33184](https://github.com/laravel/framework/pull/33184))
+- Streamline ease of use with relation subquery ([#33180](https://github.com/laravel/framework/pull/33180))
+- Improve event subscribers ([#33191](https://github.com/laravel/framework/pull/33191), [058d92f](https://github.com/laravel/framework/commit/058d92f2842211a0bc60222fd464ca5350965c22), [b80ddf4](https://github.com/laravel/framework/commit/b80ddf458bd08de375d83b716a1309ed927197aa))
+
+
+## [v7.15.0 (2020-06-09)](https://github.com/laravel/framework/compare/v7.14.1...v7.15.0)
+
+### Added
+- Added extendable relations for models ([#33025](https://github.com/laravel/framework/pull/33025))
+- Added `Illuminate\Foundation\Testing\Concerns\MakesHttpRequests::withToken()` ([#33075](https://github.com/laravel/framework/pull/33075), [79383a1](https://github.com/laravel/framework/commit/79383a129bf213177ff00ec1ba7c396da5d7749b))
+- Added the ability to `Illuminate\Database\Eloquent\Relations\HasOneOrMany::makeMany()` (create many without saving) ([#33021](https://github.com/laravel/framework/pull/33021))
+- Added `Illuminate\Database\Schema\Blueprint::foreignUuid()` ([#33129](https://github.com/laravel/framework/pull/33129))
+- Allow setting the event handler queue via a `viaQueue()` method ([#32770](https://github.com/laravel/framework/pull/32770), [852a927](https://github.com/laravel/framework/commit/852a927d254af9719c9fde6eb31466472fd03dfc)) 
+
+### Fixed
+- Fixed `Model::withoutEvents()` not registering listeners inside boot() ([#33149](https://github.com/laravel/framework/pull/33149), [4bb32ae](https://github.com/laravel/framework/commit/4bb32aea50eec4c3cc8b77f463e4a96213a0af09))
+
+
+## [v7.14.1 (2020-06-03)](https://github.com/laravel/framework/compare/v7.14.0...v7.14.1)
+
+### Added
+- Added missing `symfony/mime` suggest ([#33067](https://github.com/laravel/framework/pull/33067))
+
+### Fixed
+- Fixed `Illuminate\Database\Eloquent\Relations\MorphToMany::getCurrentlyAttachedPivots()` ([110b129](https://github.com/laravel/framework/commit/110b129531df172f03bf163f561c71123fac6296))
+
+
+## [v7.14.0 (2020-06-02)](https://github.com/laravel/framework/compare/v7.13.0...v7.14.0)
+
+### Added
+- Views: make attributes available within render method ([#32978](https://github.com/laravel/framework/pull/32978))
+- Added `forceDeleted` method to `SoftDeletes` ([#32982](https://github.com/laravel/framework/pull/32982))
+- Added `Illuminate\Filesystem\Filesystem::guessExtension()` method ([#33001](https://github.com/laravel/framework/pull/33001), [d26be90](https://github.com/laravel/framework/commit/d26be90df373dfd911029679b1765a46ae091d34))
+- Added `Illuminate\Http\Client\Request::toPsrRequest()` ([#33016](https://github.com/laravel/framework/pull/33016))
+- Added `Illuminate\Support\MessageBag::addIf()` method ([50efe09](https://github.com/laravel/framework/commit/50efe099b59e75563298deb992017b4cabfb021d))
+- Provide `psr/container-implementation` ([#33020](https://github.com/laravel/framework/pull/33020))
+- Support PHP 8's reflection API ([#33039](https://github.com/laravel/framework/pull/33039), [6018c1d](https://github.com/laravel/framework/commit/6018c1d18e7b764c17307c1f98d64482a00a668d))
+
+### Fixed
+- Restore `app()->getCached*Path()` absolute '/' behavior in Windows ([#32969](https://github.com/laravel/framework/pull/32969))
+- Fixed [Issue with using "sticky" option with Postgresql driver and read/write connections.](https://github.com/laravel/framework/issues/32966) ([#32973](https://github.com/laravel/framework/pull/32973))
+- Fixed custom class cast with dates ([2d52abc](https://github.com/laravel/framework/commit/2d52abc33865cc29b8e92a41ed7ad9a2b5383a11))
+- Fixed `Illuminate\Database\Eloquent\Collection::getQueueableRelations()` ([00e9ed7](https://github.com/laravel/framework/commit/00e9ed76483ea6ad1264676e7b1095b23e16a433))
+- Fixed bug with update existing pivot and polymorphic many to many ([684208b](https://github.com/laravel/framework/commit/684208b10460b49fa34354cc42f33b9b7135814f))
+- Fixed localization in tailwind view ([f2eb9ab](https://github.com/laravel/framework/commit/f2eb9ab82f7f5b126faf05241afe75e341fa22b1))
+
+### Changed
+- Use new line for `route:list` middleware ([#32993](https://github.com/laravel/framework/pull/32993))
+- Disallow generation commands with reserved names ([#33037](https://github.com/laravel/framework/pull/33037))
+
+
+## [v7.13.0 (2020-05-26)](https://github.com/laravel/framework/compare/v7.12.0...v7.13.0)
+
+### Added
+- Added `Illuminate\Pagination\AbstractPaginator::useTailwind()` ([2279b73](https://github.com/laravel/framework/commit/2279b73d5553c34c970128264a248f3bb57afad6), [bf1eef4](https://github.com/laravel/framework/commit/bf1eef400951dcee04839a9ab7c15da1a807f89c), [13a9ec3](https://github.com/laravel/framework/commit/13a9ec349b8bcaa31d1757752ae0304f0328e5ce))
+
+### Fixed
+- Fixed route list command for excluded middleware ([7ebd211](https://github.com/laravel/framework/commit/7ebd21193df520d78269d7abd740537a2fae889e))
+- Fixed behavior of oneachside = 1 with paginator in `Illuminate\Pagination\UrlWindow` ([c59cffa](https://github.com/laravel/framework/commit/c59cffa7825498e1d419d8c86cd8527520f718cb), [5d817be](https://github.com/laravel/framework/commit/5d817bef236559cc9368e1ec4ceafa8a790f751d))
+
+### Changed
+- Using an indexed array as the limit modifier for phpredis zrangebyscore ([#32952](https://github.com/laravel/framework/pull/32952))
+
+
+## [v7.12.0 (2020-05-19)](https://github.com/laravel/framework/compare/v7.11.0...v7.12.0)
+
+### Added
+- Added `Illuminate\Http\Middleware\TrustHosts` ([9229264](https://github.com/laravel/framework/commit/92292649621f2aadc84ab94376244650a9f55696))
+- Added ability to skip middleware from resource routes ([#32891](https://github.com/laravel/framework/pull/32891))
+
+### Fixed
+- Fixed Queued Mail MessageSent Listener With Attachments ([#32795](https://github.com/laravel/framework/pull/32795))
+- Added error clearing before sending in `Illuminate\Mail\Mailer::sendSwiftMessage()` ([#32799](https://github.com/laravel/framework/pull/32799))
+- Avoid foundation function call in the auth component ([#32805](https://github.com/laravel/framework/pull/32805))
+- Fixed inferred table reference for `Illuminate\Database\Schema\ForeignIdColumnDefinition::constrained()` ([#32847](https://github.com/laravel/framework/pull/32847))
+- Fixed wrong component generation ([73060db](https://github.com/laravel/framework/commit/73060db7c5541fadf5e4f2874a89d18621d705a3))
+- Fixed bug with request rebind and url defaults in `Illuminate\Routing\UrlGenerator` ([6ad92bf](https://github.com/laravel/framework/commit/6ad92bf9a8552a7759a7757cf821b01969baf0b6))
+- Fixed `Illuminate\Cache\ArrayStore::increment()` bug that changes expiration to forever ([#32875](https://github.com/laravel/framework/pull/32875))
+
+### Changed
+- Don't cache non objects in `Illuminate/Database/Eloquent/Concerns/HasAttributes::getClassCastableAttributeValue()` ([894fe22](https://github.com/laravel/framework/commit/894fe22c6c111b224de5bada24dcbba4c93f0305))
+- Added explicit `symfony/polyfill-php73` dependency ([5796b1e](https://github.com/laravel/framework/commit/5796b1e43dfe14914050a7e5dd24ddf803ec99b8))
+- Set `Cache\FileStore` file permissions only once ([#32845](https://github.com/laravel/framework/pull/32845), [11c533b](https://github.com/laravel/framework/commit/11c533b9aa062f4cba1dd0fe3673bf33d275480f))
+- Added alias as key of package's view components ([#32863](https://github.com/laravel/framework/pull/32863))
+
+
+## [v7.11.0 (2020-05-12)](https://github.com/laravel/framework/compare/v7.10.3...v7.11.0)
+
+### Added
+- Added support for FILTER_FLAG_EMAIL_UNICODE via "email:filter_unicode" in email validator ([#32711](https://github.com/laravel/framework/pull/32711), [43a1ed1](https://github.com/laravel/framework/commit/43a1ed1ee272b77547d292af7d337c745cccd48a))
+- Added `Illuminate\Support\Stringable::split()` ([#32713](https://github.com/laravel/framework/pull/32713), [19c5054](https://github.com/laravel/framework/commit/19c5054eff4d00d234cd928db1e085aaa14c4692))
+- Added `orWhereIntegerInRaw()` and `orWhereIntegerNotInRaw()` to `Illuminate\Database\Query\Builder` ([#32710](https://github.com/laravel/framework/pull/32710))
+- Added `Illuminate\Cache\DatabaseStore::add()` ([7fc452b](https://github.com/laravel/framework/commit/7fc452bd8d6cebd7e7a0c6cd057aea7d4e9a7fc0))
+- Implement env and production Blade directives ([#32742](https://github.com/laravel/framework/pull/32742))
+- Added `Illuminate\Database\Eloquent\Relations\MorphTo::morphWithCount()` method ([#32738](https://github.com/laravel/framework/pull/32738))
+- Added `Illuminate\Database\Eloquent\Collection::loadMorphCount()` method ([#32739](https://github.com/laravel/framework/pull/32739))
+- Added support `viaQueues` method for notifications ([e97d17c](https://github.com/laravel/framework/commit/e97d17cb6061600960bca2818f419bccca6f7da2))
+- Added `loadMorph` and `loadMorphCount` methods to `Illuminate\Database\Eloquent\Model` ([#32760](https://github.com/laravel/framework/pull/32760))
+- Added `Illuminate\Database\DatabaseManager::usingConnection()` method ([#32761](https://github.com/laravel/framework/pull/32761), [5f8c7de](https://github.com/laravel/framework/commit/5f8c7de58c5ba2cdb38ba50f1dfcc4c869d0e02d))
+- Added `Illuminate\Http\Client\PendingRequest::head()` method ([#32782](https://github.com/laravel/framework/pull/32782))
+
+### Fixed
+- Fixed belongsToMany child relationship solving ([c5e88be](https://github.com/laravel/framework/commit/c5e88be082bc690961889812360cd6c5ba983117))
+- Allow overriding the MySQL server version for strict mode ([#32708](https://github.com/laravel/framework/pull/32708))
+- Added boolean to types that don't need character options ([#32716](https://github.com/laravel/framework/pull/32716))
+- Fixed `Illuminate\Foundation\Testing\PendingCommand` that do not resolve 'OutputStyle::class' from the container ([#32687](https://github.com/laravel/framework/pull/32687))
+- Clear resolved event facade on `Illuminate\Foundation\Testing\Concerns\MocksApplicationServices::withoutEvents()` ([d1e7f85](https://github.com/laravel/framework/commit/d1e7f85dfd79abbe4f5e01818f620f6ecc67de4d))
+- Fixed `Illuminate\Database\Eloquent\Collection::getQueueableRelations()` for filtered collections ([#32747](https://github.com/laravel/framework/pull/32747))
+- Fixed `Illuminate\Database\Eloquent\Collection::loadCount` method to ensure count is set on all models ([#32740](https://github.com/laravel/framework/pull/32740))
+- Fixed deprecated "Doctrine/Common/Inflector/Inflector" class ([#32734](https://github.com/laravel/framework/pull/32734))
+- Fixed `Illuminate\Validation\Validator::getPrimaryAttribute()` ([#32775](https://github.com/laravel/framework/pull/32775))
+- Revert of ["Remove `strval` from `Illuminate/Validation/ValidationRuleParser::explodeWildcardRules()`"](https://github.com/laravel/framework/commit/1c76a6f3a80fa8f756740566dffd9fa1be65c123) ([52940cf](https://github.com/laravel/framework/commit/52940cf3275cfebd47ec008fd8ae5bc6d6a42dfd))
+
+### Changed
+- Updated user model var name in `make:policy` command ([#32748](https://github.com/laravel/framework/pull/32748))
+- Remove the undocumented dot keys support in validators ([#32764](https://github.com/laravel/framework/pull/32764))
+
+
+## [v7.10.3 (2020-05-06)](https://github.com/laravel/framework/compare/v7.10.2...v7.10.3)
+
+### Added
+- Added `Illuminate\Http\Client\Response::failed()` ([#32699](https://github.com/laravel/framework/pull/32699))
+- Added SSL SYSCALL EOF as a lost connection message ([#32697](https://github.com/laravel/framework/pull/32697))
+
+### Fixed
+- Fixed `FakerGenerator` Unique caching issue ([#32703](https://github.com/laravel/framework/pull/32703))
+- Set/reset the select to from.* in `Illuminate/Database/Query/Builder::runPaginationCountQuery()` ([858f454](https://github.com/laravel/framework/commit/858f4544d5672bf277686bdb112b1ce055416413), [98a242e](https://github.com/laravel/framework/commit/98a242e21041462054b965e587c250ac7be4f912))
+
+
+## [v7.10.2 (2020-05-06)](https://github.com/laravel/framework/compare/v7.10.1...v7.10.2)
+
+### Fixed
+- Updated `Illuminate\Database\Query\Builder::runPaginationCountQuery()`  to support groupBy and sub-selects ([#32688](https://github.com/laravel/framework/pull/32688))
 
 
 ## [v7.10.1 (2020-05-05)](https://github.com/laravel/framework/compare/v7.10.0...v7.10.1)
@@ -439,7 +993,7 @@
 - Fixed `trim` of the prefix in the `CompiledRouteCollection::newRoute()` ([ce0355c](https://github.com/laravel/framework/commit/ce0355c72bf4defb93ae80c7bf7812bd6532031a), [b842c65](https://github.com/laravel/framework/commit/b842c65ecfe1ea7839d61a46b177b6b5887fd4d2))
 
 ### Changed
-- remove comments before compiling components in the `BladeCompiler` ([2964d2d](https://github.com/laravel/framework/commit/2964d2dfd3cc50f7a709effee0af671c86587915))
+- Remove comments before compiling components in the `BladeCompiler` ([2964d2d](https://github.com/laravel/framework/commit/2964d2dfd3cc50f7a709effee0af671c86587915))
 
 
 ## [v7.0.1 (2020-03-03)](https://github.com/laravel/framework/compare/v7.0.0...v7.0.1)

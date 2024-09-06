@@ -385,7 +385,8 @@ class SupportHelpersTest extends TestCase
     {
         $this->assertNull(optional(null)->something());
 
-        $this->assertEquals(10, optional(new class {
+        $this->assertEquals(10, optional(new class
+        {
             public function something()
             {
                 return 10;
@@ -463,10 +464,12 @@ class SupportHelpersTest extends TestCase
 
         $this->assertNull(optional(null)->present()->something());
 
-        $this->assertSame('$10.00', optional(new class {
+        $this->assertSame('$10.00', optional(new class
+        {
             public function present()
             {
-                return new class {
+                return new class
+                {
                     public function something()
                     {
                         return '$10.00';
@@ -492,7 +495,7 @@ class SupportHelpersTest extends TestCase
         $this->assertEquals(2, $attempts);
 
         // Make sure we waited 100ms for the first attempt
-        $this->assertTrue(microtime(true) - $startTime >= 0.1);
+        $this->assertEqualsWithDelta(0.1, microtime(true) - $startTime, 0.02);
     }
 
     public function testRetryWithPassingWhenCallback()
@@ -513,7 +516,7 @@ class SupportHelpersTest extends TestCase
         $this->assertEquals(2, $attempts);
 
         // Make sure we waited 100ms for the first attempt
-        $this->assertTrue(microtime(true) - $startTime >= 0.1);
+        $this->assertEqualsWithDelta(0.1, microtime(true) - $startTime, 0.02);
     }
 
     public function testRetryWithFailingWhenCallback()
